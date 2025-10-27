@@ -1,7 +1,5 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
-package com.growloop.dashboard
-
+// Add all necessary imports at the top of your file
+package com.example.responsivedashboard // Use your actual package name
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -19,10 +17,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,7 +45,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Store
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.outlined.Home
@@ -81,14 +81,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.growloop.ui.theme.growLoopColors
+import com.example.growloop.ui.screens.Auth.AuthViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
@@ -117,23 +122,37 @@ data class RecentActivity(
     val color: Color
 )
 
+data class NavigationItem(
+    val title: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val badgeCount: Int = 0
+)
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SustainableDashboard() {
+
+fun SustainableDashboard(navController: NavHostController) {
     var selectedNavIndex by remember { mutableIntStateOf(0) }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = { CurvedBottomNavigationBar(selectedNavIndex) { selectedNavIndex = it } }
+        topBar = { TopBarWithDialogs() },
+        bottomBar = {
+            CurvedBottomNavigationBar(selectedNavIndex, { selectedNavIndex = it }, navigateTo = {
+                navController.navigate(it)
+            })
+        }
+
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
-        ) {
 
-            item { TopBarWithDialogs() }
+            ) {
+
             item { EnhancedImpactStatsSection() }
             item { QuickActionsGrid() }
             item { RecentActivitySection() }
@@ -142,40 +161,40 @@ fun SustainableDashboard() {
     }
 }
 
+// MODIFIED FOR RESPONSIVENESS
 @Composable
 fun QuickActionsGrid() {
     val primary = MaterialTheme.colorScheme.primary
     val sec = MaterialTheme.colorScheme.secondary
     val quickActions = remember {
-
         listOf(
             QuickAction(
-                title = "Give Clothes",
-                subtitle = "Donate or sell items",
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/tShirt_bykwob.png",
-                color = Color.White,
-                backgroundColor = primary
+                "Give Clothes",
+                "Donate or sell items",
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/tShirt_bykwob.png",
+                Color.White,
+                primary
             ),
             QuickAction(
-                title = "My Closet",
-                subtitle = "View listed items",
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/hanger_hklbmi.png",
-                color = Color.White,
-                backgroundColor = sec
+                "My Closet",
+                "View listed items",
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/hanger_hklbmi.png",
+                Color.White,
+                sec
             ),
             QuickAction(
-                title = "Wallet",
-                subtitle = "₹2,340 earned",
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/wallet_onyefm.png",
-                color = Color.White,
-                backgroundColor = Color(0xFFF59E0B)
+                "Wallet",
+                "₹2,340 earned",
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/wallet_onyefm.png",
+                Color.White,
+                Color(0xFFF59E0B)
             ),
             QuickAction(
-                title = "Impact Journey",
-                subtitle = "Track your progress",
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/earth_f7oivu.png",
-                color = Color.White,
-                backgroundColor = Color(0xFF10B981)
+                "Impact Journey",
+                "Track your progress",
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/earth_f7oivu.png",
+                Color.White,
+                Color(0xFF10B981)
             )
         )
     }
@@ -196,10 +215,16 @@ fun QuickActionsGrid() {
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+            // Use Adaptive to automatically adjust column count based on screen width.
+            columns = GridCells.Adaptive(minSize = 150.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(280.dp)
+            // Remove the fixed height to let the grid wrap its content.
+            // Disable scrolling since it's nested inside a parent LazyColumn.
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(280.dp), // You can still keep a height if you want to cap the size
+            userScrollEnabled = false
         ) {
             items(quickActions) { action ->
                 QuickActionCard(action = action)
@@ -208,12 +233,13 @@ fun QuickActionsGrid() {
     }
 }
 
+// MODIFIED FOR RESPONSIVENESS
 @Composable
 fun QuickActionCard(action: QuickAction) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
+            .heightIn(min = 130.dp)
             .clickable { /* TODO: Handle action */ }
             .shadow(
                 elevation = 4.dp,
@@ -275,311 +301,7 @@ fun QuickActionCard(action: QuickAction) {
     }
 }
 
-@Composable
-fun RecentActivitySection() {
-    val recentActivities = remember {
-        listOf(
-            RecentActivity(
-                title = "Donated 3 shirts",
-                description = "Helped 2 families in need",
-                time = "2 hours ago",
-                icon = Icons.Default.Favorite,
-                color = Color(0xFFEF4444)
-            ),
-            RecentActivity(
-                title = "Earned ₹450",
-                description = "Sold vintage jacket",
-                time = "1 day ago",
-                icon = Icons.Default.AccountBalanceWallet,
-                color = Color(0xFF10B981)
-            ),
-            RecentActivity(
-                title = "Impact milestone reached",
-                description = "200+ items given new life!",
-                time = "3 days ago",
-                icon = Icons.Default.EmojiEvents,
-                color = Color(0xFFF59E0B)
-            )
-        )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Recent Activity",
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            TextButton(
-                onClick = { /* TODO: View all activities */ }
-            ) {
-                Text(
-                    text = "View All",
-                    color = MaterialTheme.growLoopColors.brandGreen
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column {
-                recentActivities.forEachIndexed { index, activity ->
-                    RecentActivityItem(
-                        activity = activity,
-                        showDivider = index < recentActivities.size - 1
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun RecentActivityItem(
-    activity: RecentActivity,
-    showDivider: Boolean
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { /* TODO: View activity details */ }
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(activity.color.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = activity.icon,
-                    contentDescription = activity.title,
-                    tint = activity.color,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = activity.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = activity.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Text(
-                text = activity.time,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        if (showDivider) {
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                thickness = 0.5.dp
-            )
-        }
-    }
-}
-
-
-// Helper function to get time of day
-@Composable
-private fun getTimeOfDay(): String {
-    val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-    return when (currentHour) {
-        in 5..11 -> "Morning"
-        in 12..17 -> "Afternoon"
-        in 18..21 -> "Evening"
-        else -> "Night"
-    }
-}
-
-@Composable
-fun EnhancedImpactStatsSection() {
-    val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
-    val impactStats = remember {
-        listOf(
-            ImpactStat(
-                title = "Clothes Given New Life",
-                value = 247,
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/shirts_gdloex.png",
-                description = "Items donated & sold",
-                color = Color(0xFF6366F1) // Indigo
-            ),
-            ImpactStat(
-                title = "Kids Supported",
-                value = 89,
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/clothing_pymkol.png",
-                description = "Through donations",
-                color = Color(0xFFEC4899) // Pink
-            ),
-            ImpactStat(
-                title = "Textile Waste Saved",
-                value = 156,
-                icon = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/earth_f7oivu.png",
-                description = "Kg prevented from landfill",
-                color = Color(0xFF10B981) // Emerald
-            )
-        )
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        // Enhanced Section Header
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent
-            )
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.growLoopColors.brandGreen.copy(alpha = 0.1f),
-                                MaterialTheme.growLoopColors.brandGreenDark.copy(alpha = 0.05f)
-                            )
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Card(
-                            modifier = Modifier.size(48.dp),
-                            shape = CircleShape,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.growLoopColors.brandGreen.copy(alpha = 0.15f)
-                            )
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.TrendingUp,
-                                    contentDescription = "Trending up",
-                                    tint = MaterialTheme.growLoopColors.brandGreen,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-
-                        Column {
-                            Text(
-                                text = "Your Impact Journey",
-                                style = MaterialTheme.typography.headlineSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 22.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "Making a difference, one item at a time",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Progress Indicator
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.growLoopColors.brandGreen.copy(alpha = 0.1f)
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.growLoopColors.brandGreen.copy(alpha = 0.3f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.StarRate,
-                                contentDescription = "Star",
-                                tint = Color(0xFFF59E0B),
-                                modifier = Modifier.size(16.dp)
-                            )
-
-                        }
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Enhanced Stats Cards
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(horizontal = 4.dp)
-        ) {
-            items(impactStats.size) { index ->
-                val stat = impactStats[index]
-                EnhancedImpactStatCard(
-                    stat = stat,
-                    index = index
-                )
-            }
-        }
-    }
-}
-
+// MODIFIED FOR RESPONSIVENESS
 @Composable
 fun EnhancedImpactStatCard(
     stat: ImpactStat,
@@ -588,18 +310,11 @@ fun EnhancedImpactStatCard(
     var hasAnimated by remember { mutableStateOf(false) }
     val animatedValue by animateIntAsState(
         targetValue = if (hasAnimated) stat.value else 0,
-        animationSpec = tween(
-            durationMillis = 800, // Reduced from 1500ms
-            easing = LinearOutSlowInEasing // Less CPU intensive
-        )
+        animationSpec = tween(durationMillis = 800, easing = LinearOutSlowInEasing)
     )
-
     val animatedProgress by animateFloatAsState(
         targetValue = if (hasAnimated) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = 2000,
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = tween(durationMillis = 2000, easing = FastOutSlowInEasing),
         label = "progress_animation"
     )
 
@@ -608,10 +323,16 @@ fun EnhancedImpactStatCard(
         hasAnimated = true
     }
 
+    // Get screen width to make card size proportional
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val cardWidth = screenWidth * 0.45f // Card will be 45% of the screen width
+
     Card(
+        // Use the calculated proportional width and an aspect ratio for height.
         modifier = Modifier
-            .width(180.dp)
-            .height(160.dp)
+            .width(cardWidth)
+            .aspectRatio(1.125f) // Maintains a 180:160 ratio
             .shadow(
                 elevation = 12.dp,
                 shape = RoundedCornerShape(24.dp),
@@ -638,7 +359,7 @@ fun EnhancedImpactStatCard(
                     shape = RoundedCornerShape(24.dp)
                 )
         ) {
-            // Decorative background elements
+            // ... (rest of the card's inner content is the same)
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -790,95 +511,289 @@ fun EnhancedImpactStatCard(
 }
 
 
-@Composable
-fun CompactImpactCard(stat: ImpactStat) {
-    var hasAnimated by remember { mutableStateOf(false) }
-    val animatedValue by animateIntAsState(
-        targetValue = if (hasAnimated) stat.value else 0,
-        animationSpec = tween(
-            durationMillis = 1200,
-            easing = FastOutSlowInEasing
-        ),
-        label = "compact_counter_animation"
-    )
+// ---- NO CHANGES NEEDED FOR THE REST OF THE CODE ----
+// ---- The following composables are already well-structured for responsiveness ----
 
-    LaunchedEffect(Unit) {
-        delay(200)
-        hasAnimated = true
+@Composable
+fun RecentActivitySection(authViewModel: AuthViewModel = viewModel()) {
+    val recentActivities = remember {
+        listOf(
+            RecentActivity(
+                "Donated 3 shirts",
+                "Helped 2 families in need",
+                "2 hours ago",
+                Icons.Default.Favorite,
+                Color(0xFFEF4444)
+            ),
+            RecentActivity(
+                "Earned ₹450",
+                "Sold vintage jacket",
+                "1 day ago",
+                Icons.Default.AccountBalanceWallet,
+                Color(0xFF10B981)
+            ),
+            RecentActivity(
+                "Impact milestone reached",
+                "200+ items given new life!",
+                "3 days ago",
+                Icons.Default.EmojiEvents,
+                Color(0xFFF59E0B)
+            )
+        )
     }
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(90.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = stat.color.copy(alpha = 0.1f)
-        ),
-        border = BorderStroke(1.dp, stat.color.copy(alpha = 0.3f))
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Text(
+                text = "Recent Activity",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            TextButton(
+                onClick = { authViewModel.signOut() }
+            ) {
+                Text(
+                    text = "View All",
+                    color = MaterialTheme.colorScheme.primary // Using theme color
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column {
+                recentActivities.forEachIndexed { index, activity ->
+                    RecentActivityItem(
+                        activity = activity,
+                        showDivider = index < recentActivities.size - 1
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RecentActivityItem(
+    activity: RecentActivity,
+    showDivider: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+            }
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(activity.color.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = activity.icon,
+                    contentDescription = activity.title,
+                    tint = activity.color,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = animatedValue.toString(),
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
+                    text = activity.title,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold
                     ),
-                    color = stat.color
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = stat.title,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontWeight = FontWeight.Medium
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1
-                )
-                Text(
-                    text = stat.description,
-                    style = MaterialTheme.typography.labelSmall,
+                    text = activity.description,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(stat.icon)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = stat.title,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(stat.color.copy(alpha = 0.2f), CircleShape)
-                    .padding(8.dp),
-                contentScale = ContentScale.Fit
+            Text(
+                text = activity.time,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        if (showDivider) {
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                thickness = 0.5.dp
             )
         }
     }
 }
 
 
-data class NavigationItem(
-    val title: String,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector,
-    val badgeCount: Int = 0
-)
+@Composable
+private fun getTimeOfDay(): String {
+    val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    return when (currentHour) {
+        in 5..11 -> "Morning"
+        in 12..17 -> "Afternoon"
+        in 18..21 -> "Evening"
+        else -> "Night"
+    }
+}
 
+@Composable
+fun EnhancedImpactStatsSection() {
+    val impactStats = remember {
+        listOf(
+            ImpactStat(
+                "Clothes Given New Life",
+                247,
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/shirts_gdloex.png",
+                "Items donated & sold",
+                Color(0xFF6366F1)
+            ),
+            ImpactStat(
+                "Kids Supported",
+                89,
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/clothing_pymkol.png",
+                "Through donations",
+                Color(0xFFEC4899)
+            ),
+            ImpactStat(
+                "Textile Waste Saved",
+                156,
+                "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/earth_f7oivu.png",
+                "Kg prevented from landfill",
+                Color(0xFF10B981)
+            )
+        )
+    }
 
-// Curved Bottom Navigation (Most Creative)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 5.dp)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.Transparent
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    )
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Card(
+                            modifier = Modifier.size(48.dp),
+                            shape = CircleShape,
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            )
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.TrendingUp,
+                                    contentDescription = "Trending up",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+
+                        Column {
+                            Text(
+                                text = "Your Impact Journey",
+                                style = MaterialTheme.typography.headlineSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 22.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Making a difference, one item at a time",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp)
+        ) {
+            items(impactStats.size) { index ->
+                val stat = impactStats[index]
+                EnhancedImpactStatCard(
+                    stat = stat,
+                    index = index
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun CurvedBottomNavigationBar(
     selectedIndex: Int = 0,
-    onItemSelected: (Int) -> Unit = {}
+    onItemSelected: (Int) -> Unit = {},
+    navigateTo: (String) -> Unit
 ) {
     val navItems = listOf(
         NavigationItem("Home", Icons.Filled.Home, Icons.Outlined.Home),
@@ -893,7 +808,6 @@ fun CurvedBottomNavigationBar(
     )
     Box(
         modifier = Modifier
-            .fillMaxWidth()
             .shadow(
                 elevation = 12.dp,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
@@ -910,14 +824,13 @@ fun CurvedBottomNavigationBar(
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color(0xFF11998e), // ← CHANGED: Deep teal
-                        Color(0xFF38ef7d)  // ← CHANGED: Bright green
+                        Color(0xFF11998e),
+                        Color(0xFF38ef7d)
                     )
                 )
             )
     )
     {
-        // Navigation items
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -929,8 +842,8 @@ fun CurvedBottomNavigationBar(
                 CurvedNavigationItem(
                     item = item,
                     isSelected = index == selectedIndex,
-                    isCenter = index == 1 || index == 2,
-                    onClick = { onItemSelected(index) }
+                    onClick = { onItemSelected(index) },
+                    navigateTo = { navigateTo(item.title) }
                 )
             }
         }
@@ -941,8 +854,8 @@ fun CurvedBottomNavigationBar(
 fun CurvedNavigationItem(
     item: NavigationItem,
     isSelected: Boolean,
-    isCenter: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    navigateTo: () -> Unit
 ) {
     val offsetY by animateFloatAsState(
         targetValue = if (isSelected) -8f else 0f,
@@ -956,7 +869,10 @@ fun CurvedNavigationItem(
             .clickable(
                 indication = null,
                 interactionSource = remember { MutableInteractionSource() }
-            ) { onClick() },
+            ) {
+                onClick()
+                navigateTo()
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -969,7 +885,7 @@ fun CurvedNavigationItem(
                     modifier = Modifier.fillMaxSize(),
                     shape = CircleShape,
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.95f) // ← CHANGED
+                        containerColor = Color.White.copy(alpha = 0.95f)
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
                 ) {
@@ -977,7 +893,7 @@ fun CurvedNavigationItem(
                         Icon(
                             imageVector = item.selectedIcon,
                             contentDescription = item.title,
-                            tint = Color(0xFF11998e), // ← CHANGED
+                            tint = Color(0xFF11998e),
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -986,126 +902,112 @@ fun CurvedNavigationItem(
                 Icon(
                     imageVector = item.unselectedIcon,
                     contentDescription = item.title,
-                    tint = Color.White.copy(alpha = 0.8f), // ← CHANGED
+                    tint = Color.White.copy(alpha = 0.8f),
                     modifier = Modifier.size(24.dp)
                 )
             }
         }
 
-        // Text label only when unselected
         if (!isSelected) {
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = item.title,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                color = Color.White.copy(alpha = 0.9f) // ← CHANGED
+                color = Color.White.copy(alpha = 0.9f)
             )
         }
-    }
-}
-
-
-@Composable
-fun ImpactStatItem(
-    value: String,
-    label: String,
-    icon: ImageVector
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = Color.White.copy(alpha = 0.9f),
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall.copy(
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 10.sp
-            )
-        )
     }
 }
 
 
 @Composable
 fun TopBarSection(
-    name: String = "Vikas",
     onNotificationClick: () -> Unit = {},
-    onLoyaltyClick: () -> Unit = {}
+    onLoyaltyClick: () -> Unit = {},
 ) {
-    val loyaltyPoints = 275
+    val loyaltyPoints = 2909
 
-    // Animation values
     val animatedAlpha by animateFloatAsState(
         targetValue = 1f,
         animationSpec = tween(durationMillis = 1000)
     )
 
-
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(
+                RoundedCornerShape(
+                    topStart = 0.dp,
+                    topEnd = 0.dp,
+                    bottomStart = 32.dp,
+                    bottomEnd = 32.dp
+                )
+            )
             .background(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
-                        Color(0xFF6366F1), // Indigo
-                        Color(0xFF8B5CF6), // Purple
-                        Color(0xFFEC4899)  // Pink
+                        Color(0xFF6366F1),
+                        Color(0xFFA483E0),
+                        Color(0xFFEC4899)
                     )
                 )
             )
-            .padding(horizontal = 20.dp, vertical = 16.dp)
+            .padding(horizontal = 20.dp, vertical = 40.dp)
             .alpha(animatedAlpha)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 15.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // Left side - Greeting
             Column {
+                val gradientColors = listOf(
+                    Color(0xFFCACED0),
+                    Color(0xFF00F2FE),
+                    Color(0xFF43E97B),
+                    Color(0xFFFEC163),
+                )
+
                 Text(
                     text = "Good ${getTimeOfDay()}!",
-                    fontSize = 14.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    style = TextStyle(
+                        fontFamily = FontFamily.Serif,
+                        brush = Brush.linearGradient(
+                            colors = gradientColors
+                        )
+                    )
                 )
+
+
                 Text(
-                    text = "Welcome back, $name",
-                    fontSize = 20.sp,
+                    text = "Welcome Back Vikas",
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    style = TextStyle(
+                        brush = Brush.linearGradient(
+                            colors = gradientColors
+                        )
+                    )
                 )
             }
 
-            // Right side - Actions
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
 
-                // Notification Icon
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
-                            indication = null // let Material3 apply its own ripple
+                            indication = null
                         ) { onNotificationClick() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -1115,8 +1017,6 @@ fun TopBarSection(
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
                     )
-
-                    // Notification badge (optional)
                     Box(
                         modifier = Modifier
                             .size(8.dp)
@@ -1125,7 +1025,6 @@ fun TopBarSection(
                     )
                 }
 
-                // Loyalty Points Floating Action Button
                 FloatingActionButton(
                     onClick = onLoyaltyClick,
                     containerColor = Color.White,
@@ -1136,13 +1035,13 @@ fun TopBarSection(
                     ),
                     modifier = Modifier
                         .height(40.dp)
+                        .defaultMinSize(minWidth = 80.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     ) {
-                        // Diamond logo
                         AsyncImage(
                             model = "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/diamond_esqgvd.png",
                             contentDescription = "Loyalty Points",
@@ -1150,12 +1049,10 @@ fun TopBarSection(
                                 .size(20.dp),
                             contentScale = ContentScale.Fit
                         )
-
                         Text(
-                            text = loyaltyPoints.toString(),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = Color(0xFF6366F1)
+                            text = formatPoints(loyaltyPoints),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
@@ -1164,8 +1061,14 @@ fun TopBarSection(
     }
 }
 
+fun formatPoints(points: Int): String {
+    return when {
+        points >= 1_000_000 -> String.format("%.1fM", points / 1_000_000f).removeSuffix(".0")
+        points >= 1_000 -> String.format("%.1fK", points / 1_000f).removeSuffix(".0")
+        else -> points.toString()
+    }
+}
 
-// Usage with dialogs for interactions
 @Composable
 fun TopBarWithDialogs() {
     var showLoyaltyDialog by remember { mutableStateOf(false) }
@@ -1176,7 +1079,6 @@ fun TopBarWithDialogs() {
         onLoyaltyClick = { showLoyaltyDialog = true }
     )
 
-    // Loyalty Points Dialog
     if (showLoyaltyDialog) {
         AlertDialog(
             onDismissRequest = { showLoyaltyDialog = false },
@@ -1184,21 +1086,21 @@ fun TopBarWithDialogs() {
             containerColor = Color.White,
             title = {
                 Text(
-                    text = "Notifications",
+                    text = "Loyalty Points",
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF6366F1)
                 )
             },
             text = {
                 Text(
-                    text = "No new notifications at the moment.",
+                    text = "You have 2,909 points! Keep up the great work.",
                     fontSize = 16.sp,
                     color = Color.Black.copy(alpha = 0.7f)
                 )
             },
             confirmButton = {
                 TextButton(
-                    onClick = { showNotificationDialog = false },
+                    onClick = { showLoyaltyDialog = false },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = Color(0xFF6366F1)
                     )
@@ -1207,10 +1109,8 @@ fun TopBarWithDialogs() {
                 }
             }
         )
-
     }
 
-    // Notifications Dialog
     if (showNotificationDialog) {
         AlertDialog(
             onDismissRequest = { showNotificationDialog = false },
@@ -1241,6 +1141,5 @@ fun TopBarWithDialogs() {
                 }
             }
         )
-
     }
 }

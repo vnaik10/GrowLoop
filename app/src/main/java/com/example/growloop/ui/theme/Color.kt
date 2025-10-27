@@ -1,5 +1,4 @@
-package com.yourpackage.ui.theme
-
+package com.example.growloop.ui.theme
 import androidx.compose.ui.graphics.Color
 
 //Color.kt

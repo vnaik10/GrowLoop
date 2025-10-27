@@ -6,20 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.growloop.navigation.AppNavigation
+import com.example.growloop.ui.screens.Auth.LoginPage
 import com.example.growloop.ui.theme.GrowLoopTheme
-import com.growloop.dashboard.SustainableDashboard
 
 
 class MainActivity : ComponentActivity() {
@@ -29,7 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             GrowLoopTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SustainableDashboard()
+                    AppNavigation()
                 }
             }
         }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1096893667607",
+    "project_id": "growloopauth",
+    "storage_bucket": "growloopauth.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1096893667607:android:7aa92ed9215079669eff52",
+        "android_client_info": {
+          "package_name": "com.example.growloop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCn1Wq6K4xwSMXgRXvDwW2cfKAUqwGVsI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

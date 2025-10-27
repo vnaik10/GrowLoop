@@ -6,47 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import com.yourpackage.ui.theme.Alpha
-import com.yourpackage.ui.theme.BackgroundPrimary
-import com.yourpackage.ui.theme.BackgroundSecondary
-import com.yourpackage.ui.theme.BrandBlue
-import com.yourpackage.ui.theme.BrandBlueSoft
-import com.yourpackage.ui.theme.BrandGreen
-import com.yourpackage.ui.theme.BrandGreenDark
-import com.yourpackage.ui.theme.BrandGreenDeep
-import com.yourpackage.ui.theme.BrandGreenLight
-import com.yourpackage.ui.theme.BrandGreenSoft
-import com.yourpackage.ui.theme.BrandPurple
-import com.yourpackage.ui.theme.BrandPurpleDeep
-import com.yourpackage.ui.theme.CategoryAdult
-import com.yourpackage.ui.theme.CategoryBaby
-import com.yourpackage.ui.theme.CategoryKids
-import com.yourpackage.ui.theme.CategoryTeen
-import com.yourpackage.ui.theme.CategoryToddler
-import com.yourpackage.ui.theme.ConditionExcellent
-import com.yourpackage.ui.theme.ConditionFair
-import com.yourpackage.ui.theme.ConditionGood
-import com.yourpackage.ui.theme.ConditionWorn
-import com.yourpackage.ui.theme.ErrorLight
-import com.yourpackage.ui.theme.ErrorRed
-import com.yourpackage.ui.theme.NeutralBlack
-import com.yourpackage.ui.theme.NeutralDark
-import com.yourpackage.ui.theme.NeutralDeep
-import com.yourpackage.ui.theme.NeutralGray
-import com.yourpackage.ui.theme.NeutralLighter
-import com.yourpackage.ui.theme.NeutralMedium
-import com.yourpackage.ui.theme.NeutralWhite
-import com.yourpackage.ui.theme.ProgressBackground
-import com.yourpackage.ui.theme.ProgressComplete
-import com.yourpackage.ui.theme.ProgressForeground
-import com.yourpackage.ui.theme.SeasonAutumn
-import com.yourpackage.ui.theme.SeasonSpring
-import com.yourpackage.ui.theme.SeasonSummer
-import com.yourpackage.ui.theme.SeasonWinter
-import com.yourpackage.ui.theme.SurfacePrimary
-import com.yourpackage.ui.theme.SurfaceSecondary
-import com.yourpackage.ui.theme.SurfaceTertiary
-import com.yourpackage.ui.theme.WarningOrange
 
 //THEME.kt
 // ============= CUSTOM THEME COLORS =============
