@@ -1,11 +1,18 @@
-package com.example.growloop.ui.screens.Auth.model
 
-// BagResponseDTO.kt
+data class BagCreateRequest(
+    val bagName: String,
+    val purpose: String  // "RESALE" or "DONATION"
+)
+
 data class BagResponseDTO(
     val bagId: Long,
     val bagName: String,
-    val sharableLinkToken: String,
+    val sharableLink: String,
+    val shareableUrl: String,
     val status: String,
+    val statusDisplayName: String,
+    val purpose: String,           // "RESALE", "DONATION"
+    val purposeDisplayName: String, // "Resale - Earn Money"
     val createdAt: String,
     val totalItems: Int,
     val pointsAwarded: Int,
@@ -14,45 +21,36 @@ data class BagResponseDTO(
     val eligibleForFreePickup: Boolean,
     val pickupCost: Double,
     val pickupMessage: String,
-    val creatorName: String
-)
+    val creatorName: String,
+    val creatorId: Long
+) {
+    fun isResaleBag(): Boolean = purpose == "RESALE"
+    fun isDonationBag(): Boolean = purpose == "DONATION"
 
-// BagCreateRequest.kt
-data class BagCreateRequest(
-    val bagName: String
-)
+    fun getPurposeIcon(): String = when (purpose) {
+        "RESALE" -> "💰"
+        "DONATION" -> "❤️"
+        else -> "📦"
+    }
 
-// ItemResponseDTO.kt
-data class ItemResponseDTO(
-    val itemId: Long,
-    val itemType: String,
-    val conditionDescription: String?,
-    val gender: String?,
-    val ageGroup: String?,
-    val grade: String,
-    val status: String,
-    val loyaltyPoint: Double,
-    val addedAt: String,
-    val contributorName: String
-)
+    fun getPurposeColor(): androidx.compose.ui.graphics.Color = when (purpose) {
+        "RESALE" -> androidx.compose.ui.graphics.Color(0xFF4CAF50)  // Green
+        "DONATION" -> androidx.compose.ui.graphics.Color(0xFFE91E63) // Pink
+        else -> androidx.compose.ui.graphics.Color.Gray
+    }
+}
 
-// ApiResponse.kt (generic wrapper)
-data class BagApiResponse<T>(
-    val success: Boolean,
-    val message: String,
-    val data: T?
-)
+enum class BagPurpose(val displayName: String, val description: String) {
+    RESALE("Resale", "Earn money from sales"),
+    DONATION("Donation", "Help families in need");
 
-// BagStatus enum for Android
-enum class BagStatus(val displayName: String) {
-    OPEN("Open - Adding Items"),
-    AWAITING_PICKUP("Awaiting Pickup"),
-    COLLECTED("Items Collected"),
-    CLOSED("Bag Closed");
+    val icon: String get() = when (this) {
+        RESALE -> "💰"
+        DONATION -> "❤️"
+    }
 
-    companion object {
-        fun fromString(status: String): BagStatus {
-            return values().find { it.name.equals(status, ignoreCase = true) } ?: OPEN
-        }
+    val color: androidx.compose.ui.graphics.Color get() = when (this) {
+        RESALE -> androidx.compose.ui.graphics.Color(0xFF4CAF50)
+        DONATION -> androidx.compose.ui.graphics.Color(0xFFE91E63)
     }
 }

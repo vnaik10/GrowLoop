@@ -201,8 +201,9 @@ object ThemeUtils {
     }
 }
 
+
 // ============= PREVIEW HELPERS =============
-// Helper composables for theme previews
+// Helper composable for theme previews
 @Composable
 fun ThemePreview(content: @Composable () -> Unit) {
     GrowLoopTheme(content = content)

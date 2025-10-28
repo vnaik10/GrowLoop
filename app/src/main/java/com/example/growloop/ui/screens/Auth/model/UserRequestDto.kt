@@ -24,7 +24,8 @@ data class UserResponseDTO(
     val updatedAt: String?
 )
 
-data class UserApiResponse<T>(
+
+data class ApiResponse<T>(
     val success: Boolean,
     val message: String,
     val data: T?

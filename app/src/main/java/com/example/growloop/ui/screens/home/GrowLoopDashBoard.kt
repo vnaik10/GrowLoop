@@ -1,6 +1,7 @@
 // Add all necessary imports at the top of your file
 package com.example.responsivedashboard // Use your actual package name
 
+import android.widget.MediaController
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -93,6 +94,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.growloop.navigation.Pages
 import com.example.growloop.ui.screens.Auth.AuthViewModel
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -154,7 +156,7 @@ fun SustainableDashboard(navController: NavHostController) {
             ) {
 
             item { EnhancedImpactStatsSection() }
-            item { QuickActionsGrid() }
+            item { QuickActionsGrid(navController) }
             item { RecentActivitySection() }
         }
 
@@ -163,7 +165,7 @@ fun SustainableDashboard(navController: NavHostController) {
 
 // MODIFIED FOR RESPONSIVENESS
 @Composable
-fun QuickActionsGrid() {
+fun QuickActionsGrid(navController: NavHostController) {
     val primary = MaterialTheme.colorScheme.primary
     val sec = MaterialTheme.colorScheme.secondary
     val quickActions = remember {
@@ -176,7 +178,7 @@ fun QuickActionsGrid() {
                 primary
             ),
             QuickAction(
-                "My Closet",
+                "Resale",
                 "View listed items",
                 "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/hanger_hklbmi.png",
                 Color.White,
@@ -190,7 +192,7 @@ fun QuickActionsGrid() {
                 Color(0xFFF59E0B)
             ),
             QuickAction(
-                "Impact Journey",
+                "Recycle",
                 "Track your progress",
                 "https://res.cloudinary.com/dbpdnuuog/image/upload/v1756909253/earth_f7oivu.png",
                 Color.White,
@@ -227,7 +229,7 @@ fun QuickActionsGrid() {
             userScrollEnabled = false
         ) {
             items(quickActions) { action ->
-                QuickActionCard(action = action)
+                QuickActionCard(action = action,navController)
             }
         }
     }
@@ -235,12 +237,17 @@ fun QuickActionsGrid() {
 
 // MODIFIED FOR RESPONSIVENESS
 @Composable
-fun QuickActionCard(action: QuickAction) {
+fun QuickActionCard(action: QuickAction, navController : NavHostController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 130.dp)
-            .clickable { /* TODO: Handle action */ }
+            .clickable {
+
+                when(action.title) {
+                "Give Clothes" -> navController.navigate(route = Pages.DONATE.name)
+                }
+            }
             .shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(18.dp)
