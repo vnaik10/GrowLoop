@@ -1,11 +1,13 @@
 package com.example.growloop.navigation
 
 import DonateScreen
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,12 +16,14 @@ import com.example.growloop.ui.screens.Auth.AuthViewModel
 import com.example.growloop.ui.screens.Auth.LoginPage
 import com.example.growloop.ui.screens.Auth.AuthState
 import com.example.growloop.ui.screens.Auth.RegistrationScreen
+import com.example.growloop.ui.screens.bags.MyBagsScreen
+import com.example.growloop.ui.screens.home.ResaleScreen
 import com.example.responsivedashboard.SustainableDashboard
 
 
 @Composable
 fun AppNavigation(
-    authViewModel: AuthViewModel = viewModel() // Get AuthViewModel here
+    authViewModel: AuthViewModel = viewModel()
 ) {
 val navController: NavHostController = rememberNavController()
     val authState by authViewModel.authState.observeAsState()
@@ -55,6 +59,14 @@ val navController: NavHostController = rememberNavController()
 
         composable(Pages.DONATE.name) {
             DonateScreen(navController)
+        }
+        composable(route =  "MyBag") {
+            MyBagsScreen(navController)
+        }
+
+        composable(route = Pages.RESALE.name) {
+            ResaleScreen(navController)
+
         }
 
     }

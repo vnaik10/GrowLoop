@@ -141,8 +141,8 @@ fun SustainableDashboard(navController: NavHostController) {
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { TopBarWithDialogs() },
         bottomBar = {
-            CurvedBottomNavigationBar(selectedNavIndex, { selectedNavIndex = it }, navigateTo = {
-                navController.navigate(it)
+            CurvedBottomNavigationBar(selectedNavIndex, { selectedNavIndex = it }, navigateTo = {route ->
+                navController.navigate(route)
             })
         }
 
@@ -246,6 +246,7 @@ fun QuickActionCard(action: QuickAction, navController : NavHostController) {
 
                 when(action.title) {
                 "Give Clothes" -> navController.navigate(route = Pages.DONATE.name)
+                    "Resale" -> navController.navigate(route = Pages.RESALE.name)
                 }
             }
             .shadow(
@@ -801,7 +802,7 @@ fun CurvedBottomNavigationBar(
     selectedIndex: Int = 0,
     onItemSelected: (Int) -> Unit = {},
     navigateTo: (String) -> Unit
-) {
+){
     val navItems = listOf(
         NavigationItem("Home", Icons.Filled.Home, Icons.Outlined.Home),
         NavigationItem(

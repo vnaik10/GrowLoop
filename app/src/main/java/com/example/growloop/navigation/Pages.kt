@@ -4,6 +4,6 @@ enum class Pages {
     LOGIN,
     REGISTER,
     DASHBOARD,
-    BAG_PAGE,
+    RESALE,
     DONATE
 }
