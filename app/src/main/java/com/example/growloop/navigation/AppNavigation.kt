@@ -1,6 +1,8 @@
 package com.example.growloop.navigation
 
+
 import DonateScreen
+import SustainableDashboard
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,13 +14,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.growloop.chatbot.CustomChatScreen
 import com.example.growloop.ui.screens.Auth.AuthViewModel
 import com.example.growloop.ui.screens.Auth.LoginPage
 import com.example.growloop.ui.screens.Auth.AuthState
 import com.example.growloop.ui.screens.Auth.RegistrationScreen
 import com.example.growloop.ui.screens.bags.MyBagsScreen
 import com.example.growloop.ui.screens.home.ResaleScreen
-import com.example.responsivedashboard.SustainableDashboard
 
 
 @Composable
@@ -66,8 +68,14 @@ val navController: NavHostController = rememberNavController()
 
         composable(route = Pages.RESALE.name) {
             ResaleScreen(navController)
-
         }
+
+        composable(Pages.CHAT.name) {
+            CustomChatScreen(onBack = {
+                navController.popBackStack()
+            })
+        }
+
 
     }
 }

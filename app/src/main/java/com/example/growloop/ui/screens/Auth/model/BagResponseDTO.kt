@@ -1,3 +1,6 @@
+import androidx.compose.ui.graphics.Color
+import com.example.growloop.ui.screens.Auth.model.ItemResponseDTO
+import com.example.growloop.ui.screens.home.ContributorInfo
 
 data class BagCreateRequest(
     val bagName: String,
@@ -11,8 +14,8 @@ data class BagResponseDTO(
     val shareableUrl: String,
     val status: String,
     val statusDisplayName: String,
-    val purpose: String,           // "RESALE", "DONATION"
-    val purposeDisplayName: String, // "Resale - Earn Money"
+    val purpose: String,
+    val purposeDisplayName: String,
     val createdAt: String,
     val totalItems: Int,
     val pointsAwarded: Int,
@@ -33,10 +36,23 @@ data class BagResponseDTO(
         else -> "📦"
     }
 
-    fun getPurposeColor(): androidx.compose.ui.graphics.Color = when (purpose) {
-        "RESALE" -> androidx.compose.ui.graphics.Color(0xFF4CAF50)  // Green
-        "DONATION" -> androidx.compose.ui.graphics.Color(0xFFE91E63) // Pink
-        else -> androidx.compose.ui.graphics.Color.Gray
+    fun getPurposeColor(): Color = when (purpose) {
+        "RESALE" -> Color(0xFF4CAF50)
+        "DONATION" -> Color(0xFFE91E63)
+        else -> Color.Gray
+    }
+
+    fun getContributorsFromItems(items: List<ItemResponseDTO>): List<ContributorInfo> {
+        return items
+            .filter { it.contributorId != creatorId }
+            .groupBy { it.contributorId }
+            .map { (id, contributorItems) ->
+                ContributorInfo(
+                    userId = id,
+                    userName = contributorItems.first().contributorName,
+                    itemCount = contributorItems.size
+                )
+            }
     }
 }
 
@@ -49,8 +65,8 @@ enum class BagPurpose(val displayName: String, val description: String) {
         DONATION -> "❤️"
     }
 
-    val color: androidx.compose.ui.graphics.Color get() = when (this) {
-        RESALE -> androidx.compose.ui.graphics.Color(0xFF4CAF50)
-        DONATION -> androidx.compose.ui.graphics.Color(0xFFE91E63)
+    val color: Color get() = when (this) {
+        RESALE -> Color(0xFF4CAF50)
+        DONATION -> Color(0xFFE91E63)
     }
 }

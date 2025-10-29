@@ -5,5 +5,6 @@ enum class Pages {
     REGISTER,
     DASHBOARD,
     RESALE,
-    DONATE
+    DONATE,
+    CHAT
 }

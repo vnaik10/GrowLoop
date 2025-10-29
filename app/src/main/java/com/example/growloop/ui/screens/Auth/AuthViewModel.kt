@@ -6,6 +6,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.growloop.ui.screens.Auth.model.UserRegistrationRequest
 import com.google.firebase.auth.FirebaseAuth
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class AuthViewModel : ViewModel() {
 
@@ -70,7 +74,7 @@ class AuthViewModel : ViewModel() {
                     _authState.postValue(AuthState.Authenticated("Registration successful"))
                     Log.d("AuthViewModel", "User registered successfully: $message")
                 } else {
-                    // Clean up Firebase user on failure
+
                     firebaseUser.delete().addOnCompleteListener { deleteTask ->
                         Log.d(
                             "AuthViewModel",
@@ -123,8 +127,6 @@ class AuthViewModel : ViewModel() {
         auth.signOut()
         _authState.value = AuthState.UnAuthenticated
     }
-
-
 }
 
 sealed class AuthState {
@@ -132,4 +134,15 @@ sealed class AuthState {
     object UnAuthenticated : AuthState()
     object Loading : AuthState()
     data class ErrorMessage(val message: String) : AuthState()
+}
+
+fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+    val R = 6371 // km
+    val dLat = Math.toRadians(lat2 - lat1)
+    val dLon = Math.toRadians(lon2 - lon1)
+    val a = sin(dLat / 2) * sin(dLat / 2) +
+            cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+            sin(dLon / 2) * sin(dLon / 2)
+    val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
 }

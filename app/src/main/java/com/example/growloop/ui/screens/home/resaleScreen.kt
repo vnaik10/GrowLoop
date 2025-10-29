@@ -1,5 +1,6 @@
 package com.example.growloop.ui.screens.home
 
+import BagPurpose
 import BagResponseDTO
 import BagViewModel
 import androidx.compose.animation.*
@@ -9,7 +10,6 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -21,7 +21,49 @@ import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import ApiClient
+import com.example.growloop.ui.screens.Auth.model.ItemResponseDTO
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
+// ============= DATA CLASSES =============
+data class ContributorInfo(
+    val userId: Long,
+    val userName: String,
+    val itemCount: Int
+) {
+    fun getInitial(): String {
+        return userName.firstOrNull()?.uppercase() ?: "?"
+    }
+
+    fun getAvatarColor(): Color {
+        val colors = listOf(
+            Color(0xFF4CAF50), // Green
+            Color(0xFF2196F3), // Blue
+            Color(0xFFFF9800), // Orange
+            Color(0xFFE91E63), // Pink
+            Color(0xFF9C27B0), // Purple
+            Color(0xFF00BCD4), // Cyan
+            Color(0xFFFF5722), // Deep Orange
+            Color(0xFF3F51B5)  // Indigo
+        )
+        return colors[(userId % colors.size).toInt()]
+    }
+}
+
+// Helper extension for BagResponseDTO
+fun BagResponseDTO.getContributorsFromItems(items: List<ItemResponseDTO>): List<ContributorInfo> {
+    return items
+        .filter { it.contributorId != creatorId }
+        .groupBy { it.contributorId }
+        .map { (id, contributorItems) ->
+            ContributorInfo(
+                userId = id,
+                userName = contributorItems.first().contributorName,
+                itemCount = contributorItems.size
+            )
+        }
+}
 
 // ============= MAIN RESALE SCREEN =============
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,12 +75,34 @@ fun ResaleScreen(
     val bags by bagViewModel.bags
     val isLoading by bagViewModel.isLoading
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     var showHowItWorks by remember { mutableStateOf(false) }
     var showCreateBagDialog by remember { mutableStateOf(false) }
+
+    // Store items for each bag
+    val bagItemsMap = remember { mutableStateMapOf<Long, List<ItemResponseDTO>>() }
 
     LaunchedEffect(Unit) {
         bagViewModel.loadUserBags()
     }
+
+
+    // Load items for each resale bag
+    LaunchedEffect(bags) {
+        val firebaseUid = FirebaseAuth.getInstance().currentUser?.uid ?: return@LaunchedEffect // ✅ Get firebaseUid
+
+        bags.filter { it.purpose == "RESALE" }.forEach { bag ->
+            coroutineScope.launch {
+                ApiClient.getBagItems(bag.bagId, firebaseUid) { items, _ -> // ✅ Pass firebaseUid
+                    items?.let {
+                        bagItemsMap[bag.bagId] = it
+                    }
+                }
+            }
+        }
+    }
+
 
     val resaleBags = bags.filter { it.purpose == "RESALE" }
     val totalEarnings = resaleBags.sumOf { it.pointsAwarded }
@@ -107,9 +171,7 @@ fun ResaleScreen(
                 ) {
                     // Hero Card
                     item {
-                        HeroCard(
-                            onCreateBag = { showCreateBagDialog = true }
-                        )
+                        HeroCard(onCreateBag = { showCreateBagDialog = true })
                     }
 
                     // Stats Row
@@ -160,14 +222,13 @@ fun ResaleScreen(
                     // Resale Bags
                     if (resaleBags.isEmpty()) {
                         item {
-                            EmptyResaleState(
-                                onCreateBag = { showCreateBagDialog = true }
-                            )
+                            EmptyResaleState(onCreateBag = { showCreateBagDialog = true })
                         }
                     } else {
                         items(resaleBags) { bag ->
                             ResaleBagCard(
                                 bag = bag,
+                                bagItems = bagItemsMap[bag.bagId] ?: emptyList(),
                                 onBagClick = {
                                     navController.navigate("bag_details/${bag.bagId}")
                                 },
@@ -222,9 +283,7 @@ fun ResaleScreen(
 fun HeroCard(onCreateBag: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         shape = RoundedCornerShape(24.dp)
     ) {
@@ -240,12 +299,8 @@ fun HeroCard(onCreateBag: () -> Unit) {
                     )
                 )
         ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         modifier = Modifier.size(60.dp),
                         shape = CircleShape,
@@ -283,18 +338,13 @@ fun HeroCard(onCreateBag: () -> Unit) {
                 Button(
                     onClick = onCreateBag,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF4CAF50)
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(16.dp)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Create Resale Bag",
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Create Resale Bag", fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(Icons.Default.ArrowForward, contentDescription = null)
                 }
@@ -305,24 +355,14 @@ fun HeroCard(onCreateBag: () -> Unit) {
 
 // ============= STATS CARD =============
 @Composable
-fun ResaleStatsCard(
-    totalBags: Int,
-    totalEarnings: Int,
-    readyBags: Int
-) {
+fun ResaleStatsCard(totalBags: Int, totalEarnings: Int, readyBags: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(20.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             Text(
                 "Your Impact",
                 style = MaterialTheme.typography.titleMedium,
@@ -343,9 +383,7 @@ fun ResaleStatsCard(
                 )
 
                 Divider(
-                    modifier = Modifier
-                        .height(50.dp)
-                        .width(1.dp),
+                    modifier = Modifier.height(50.dp).width(1.dp),
                     color = Color.LightGray.copy(alpha = 0.3f)
                 )
 
@@ -357,9 +395,7 @@ fun ResaleStatsCard(
                 )
 
                 Divider(
-                    modifier = Modifier
-                        .height(50.dp)
-                        .width(1.dp),
+                    modifier = Modifier.height(50.dp).width(1.dp),
                     color = Color.LightGray.copy(alpha = 0.3f)
                 )
 
@@ -381,15 +417,8 @@ fun StatColumn(
     label: String,
     color: Color
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(28.dp)
-        )
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(28.dp))
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             value,
@@ -397,11 +426,7 @@ fun StatColumn(
             fontWeight = FontWeight.Bold,
             color = color
         )
-        Text(
-            label,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.Gray
-        )
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
     }
 }
 
@@ -415,14 +440,8 @@ fun HowItWorksCard() {
         ),
         shape = RoundedCornerShape(20.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.Info,
                     contentDescription = null,
@@ -447,14 +466,7 @@ fun HowItWorksCard() {
                 HowItWorksStep("4️⃣", "Earn money + points", "Get paid when items sell")
             ).forEach { step ->
                 HowItWorksRow(step)
-                if (step != listOf(
-                        HowItWorksStep("1️⃣", "Create bag & add items", "Add clothes you want to sell"),
-                        HowItWorksStep("2️⃣", "5+ items = FREE pickup", "Or pay ₹50 for pickup"),
-                        HowItWorksStep("3️⃣", "We QC & list for sale", "Quality check and photograph"),
-                        HowItWorksStep("4️⃣", "Earn money + points", "Get paid when items sell")
-                    ).last()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -468,12 +480,7 @@ fun HowItWorksRow(step: HowItWorksStep) {
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            step.emoji,
-            fontSize = 24.sp,
-            modifier = Modifier.padding(end = 12.dp)
-        )
-
+        Text(step.emoji, fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
         Column {
             Text(
                 step.title,
@@ -493,11 +500,16 @@ fun HowItWorksRow(step: HowItWorksStep) {
 @Composable
 fun ResaleBagCard(
     bag: BagResponseDTO,
+    bagItems: List<ItemResponseDTO>,
     onBagClick: () -> Unit,
     onAddItems: () -> Unit,
     onSchedulePickup: () -> Unit,
     onShare: () -> Unit
 ) {
+    val contributors = remember(bagItems) {
+        bag.getContributorsFromItems(bagItems)
+    }
+
     val borderColor = when {
         bag.eligibleForFreePickup -> Color(0xFF4CAF50)
         bag.totalItems > 0 -> Color(0xFFFF9800)
@@ -514,18 +526,12 @@ fun ResaleBagCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onBagClick() },
-        colors = CardDefaults.cardColors(
-            containerColor = backgroundColor
-        ),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         shape = RoundedCornerShape(20.dp),
         border = BorderStroke(2.dp, borderColor)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
             // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -541,29 +547,27 @@ fun ResaleBagCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
+                    Surface(
+                        color = when (bag.status) {
+                            "OPEN" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                            "AWAITING_PICKUP" -> Color(0xFFFF9800).copy(alpha = 0.2f)
+                            "SCHEDULED" -> Color(0xFF2196F3).copy(alpha = 0.2f)
+                            else -> Color.Gray.copy(alpha = 0.2f)
+                        },
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            bag.statusDisplayName,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
                             color = when (bag.status) {
-                                "OPEN" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
-                                "AWAITING_PICKUP" -> Color(0xFFFF9800).copy(alpha = 0.2f)
-                                "SCHEDULED" -> Color(0xFF2196F3).copy(alpha = 0.2f)
-                                else -> Color.Gray.copy(alpha = 0.2f)
-                            },
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                bag.statusDisplayName,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Medium,
-                                color = when (bag.status) {
-                                    "OPEN" -> Color(0xFF4CAF50)
-                                    "AWAITING_PICKUP" -> Color(0xFFFF9800)
-                                    "SCHEDULED" -> Color(0xFF2196F3)
-                                    else -> Color.Gray
-                                }
-                            )
-                        }
+                                "OPEN" -> Color(0xFF4CAF50)
+                                "AWAITING_PICKUP" -> Color(0xFFFF9800)
+                                "SCHEDULED" -> Color(0xFF2196F3)
+                                else -> Color.Gray
+                            }
+                        )
                     }
                 }
 
@@ -642,9 +646,7 @@ fun ResaleBagCard(
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -689,9 +691,7 @@ fun ResaleBagCard(
             // Earnings Display
             if (bag.pointsAwarded > 0 || bag.totalItems >= 3) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Star,
                         contentDescription = null,
@@ -709,6 +709,12 @@ fun ResaleBagCard(
                         color = Color(0xFFFFB000)
                     )
                 }
+            }
+
+            // Contributors Section
+            if (contributors.isEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                ContributorsSection(contributors = contributors)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -735,7 +741,7 @@ fun ResaleBagCard(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Items", fontWeight = FontWeight.Medium)
+                            Text("Add", fontWeight = FontWeight.Medium)
                         }
 
                         OutlinedButton(
@@ -775,7 +781,7 @@ fun ResaleBagCard(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    if (bag.eligibleForFreePickup) "FREE Pickup" else "Pickup",
+                                    if (bag.eligibleForFreePickup) "FREE" else "Pickup",
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -793,10 +799,7 @@ fun ResaleBagCard(
                         ) {
                             Icon(Icons.Default.Visibility, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "View Details",
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("View Details", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -805,13 +808,103 @@ fun ResaleBagCard(
     }
 }
 
+// ============= CONTRIBUTORS SECTION =============
+@Composable
+fun ContributorsSection(contributors: List<ContributorInfo>) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF4CAF50).copy(alpha = 0.05f)
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    Icons.Default.People,
+                    contentDescription = null,
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Contributors (${contributors.size})",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF4CAF50)
+                )
+            }
+
+            ContributorAvatarRow(contributors = contributors)
+        }
+    }
+}
+
+@Composable
+fun ContributorAvatarRow(contributors: List<ContributorInfo>) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy((-8).dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        contributors.take(3).forEach { contributor ->
+            ContributorAvatar(
+                initial = contributor.getInitial(),
+                color = contributor.getAvatarColor(),
+                name = contributor.userName
+            )
+        }
+
+        if (contributors.size > 3) {
+            Surface(
+                modifier = Modifier.size(32.dp),
+                shape = CircleShape,
+                color = Color.Gray.copy(alpha = 0.2f),
+                border = BorderStroke(2.dp, Color.White)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        "+${contributors.size - 3}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ContributorAvatar(initial: String, color: Color, name: String) {
+    Surface(
+        modifier = Modifier.size(32.dp),
+        shape = CircleShape,
+        color = color,
+        border = BorderStroke(2.dp, Color.White),
+        shadowElevation = 4.dp
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                initial,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+    }
+}
+
 // ============= EMPTY STATE =============
 @Composable
 fun EmptyResaleState(onCreateBag: () -> Unit) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxWidth().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(40.dp))
@@ -848,20 +941,13 @@ fun EmptyResaleState(onCreateBag: () -> Unit) {
 
         Button(
             onClick = onCreateBag,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50)
-            ),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
             shape = RoundedCornerShape(16.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                "Create First Resale Bag",
-                fontWeight = FontWeight.Bold
-            )
+            Text("Create First Resale Bag", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -869,28 +955,17 @@ fun EmptyResaleState(onCreateBag: () -> Unit) {
 // ============= CREATE BAG DIALOG =============
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateResaleBagDialog(
-    onDismiss: () -> Unit,
-    onCreateBag: (String) -> Unit
-) {
+fun CreateResaleBagDialog(onDismiss: () -> Unit, onCreateBag: (String) -> Unit) {
     var bagName by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss
-    ) {
+    AlertDialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         modifier = Modifier.size(48.dp),
                         shape = CircleShape,
@@ -943,9 +1018,7 @@ fun CreateResaleBagDialog(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
